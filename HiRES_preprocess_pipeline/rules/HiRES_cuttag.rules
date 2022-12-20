@@ -1,0 +1,124 @@
+rule R2_mapping:
+    input:
+        ref_genome=config["refs"][config["ref_genome"]]["bwa_mem2_index"],
+        R2 = rules.multiSplit.output.split_R2
+    output:
+        R2sortbam = "processed/{sample}/{split}/{sample}.R2.sort.bam"
+    threads:  config["resources"]["bwa_cpu_threads"],
+    conda:"../envs/main_env.yaml",
+    shell:"""
+
+        bwa-mem2 mem -5SP -t {threads} {input.ref_genome} {input.R2} | samtools sort -@{threads} -o {output.R2sortbam} -
+
+    """
+
+#picard queryname sort/dedup
+rule picard_sort_rmdup:
+    input:
+        R2sortbam = rules.R2_mapping.output.R2sortbam,
+    output:
+        re_sort = temp("processed/{sample}/{split}/{sample}.{split}.R2.querysort.bam"),
+        rmdup_bam = "processed/{sample}/{split}/{sample}.{split}.R2.rmdup.bam",
+        rmdup_mat = "processed/{sample}/{split}/{sample}.{split}.R2.rmdup.mat",
+    conda:"../envs/main_env.yaml",
+    shell:"""
+
+        picard SortSam INPUT={input.R2sortbam} OUTPUT={output.re_sort} SORT_ORDER=queryname
+        picard MarkDuplicates -I {output.re_sort} -O {output.rmdup_bam} -M {output.rmdup_mat} --REMOVE_DUPLICATES true
+
+    """
+
+rule bam2bed:
+    input:
+        rmdup_bam = rules.picard_sort_rmdup.output.rmdup_bam,
+    output:
+        R2_dedup_bed = "processed/{sample}/{split}/{sample}.{split}.R2_5.bed.gz"
+    conda:"../envs/main_env.yaml",
+    shell:"""
+
+        bedtools bamtobed -i {input.rmdup_bam} | gzip > {output.R2_dedup_bed}
+
+    """
+
+rule fastq2tabfastq:
+    input:
+        R1 = rules.multiSplit.output.split_R1,
+        R2 = rules.multiSplit.output.split_R2,
+    output:
+        R1_out = temp("processed/{sample}/tabfastq/{sample}.{split}.R1.tabfastq.gz"),
+        R2_out = temp("processed/{sample}/tabfastq/{sample}.{split}.R2.tabfastq.gz"),
+    conda:"../envs/main_env.yaml",
+    shell:"""
+
+        seqkit fx2tab {input.R1} | gzip > {output.R1_out}
+        seqkit fx2tab {input.R2} | gzip > {output.R2_out}
+
+    """
+
+# use custom R script dedup with R2
+rule extract_fastq:
+    input:
+        R2_dedup_bed = rules.bam2bed.output.R2_dedup_bed,
+        R1 = rules.fastq2tabfastq.output.R1_out,
+        R2 = rules.fastq2tabfastq.output.R2_out,
+    output:
+        R1out_tabfastq = temp("processed/{sample}/tabfastq/{sample}.{split}.R1.dedup.tabfastq.gz"),
+        R2out_tabfastq = temp("processed/{sample}/tabfastq/{sample}.{split}.R2.dedup.tabfastq.gz"),
+    params:
+        max_sep_distance = 20,
+        min_mapping_qual = 30,
+    conda: "../envs/main_env.yaml",
+    shell:"""
+
+        Rscript ./CHARM/CHARM_scripts/CTHiRES.extract_dedup_reads.R {params.max_sep_distance} {params.min_mapping_qual} \
+                            {input.R2_dedup_bed} {input.R1} {input.R2} {output.R1out_tabfastq} {output.R2out_tabfastq}
+
+    """
+
+rule tabfastq2fastq:
+    input:
+        R1tab = rules.extract_fastq.output.R1out_tabfastq,
+        R2tab = rules.extract_fastq.output.R2out_tabfastq,
+    output:
+        R1 = "processed/{sample}/{split}/{sample}.{split}.dedup.R1.fq.gz",
+        R2 = "processed/{sample}/{split}/{sample}.{split}.dedup.R2.fq.gz",
+    conda: "../envs/main_env.yaml",
+    shell:"""
+
+        seqkit tab2fx {input.R1tab} | gzip > {output.R1} || touch {output.R1}
+        seqkit tab2fx {input.R2tab} | gzip > {output.R2} || touch {output.R2}
+
+    """
+rule pair_end_mapping:
+    input:
+        R1dedup = rules.tabfastq2fastq.output.R1,
+        R2dedup = rules.tabfastq2fastq.output.R2,
+        ref_genome=config["refs"][config["ref_genome"]]["bwa_mem2_index"],
+    output:
+        sortbam = "processed/{split}_all/{sample}.{split}.pairend.sort.bam"
+    threads:  config["resources"]["bwa_cpu_threads"],
+    resources:
+        nodes =  config["resources"]["bwa_cpu_threads"],
+    conda:"../envs/main_env.yaml",
+    shell:"""
+
+        bwa-mem2 mem -5SP -t {threads} {input.ref_genome} {input.R1dedup} {input.R2dedup} | samtools sort -@{threads} -o {output.sortbam} -
+        samtools index {output.sortbam}
+
+        """
+        
+rule generate_stat_ct:
+    input:
+        expand("processed/{sample}/{split}/{sample}.{split}.R1.fq.gz", sample=SAMPLES if config["if_cuttag"] else [],split=SPLIT if config ["if_cuttag"] else []),
+        expand("processed/{split}_all/{sample}.{split}.pairend.sort.bam", sample=SAMPLES if config["if_cuttag"] else [],split=SPLIT if config ["if_cuttag"] else []),
+    output:
+        readstat="stat/{split}.read.stat",
+        fragstat="stat/{split}.frag.stat",
+    threads: config["resources"]["generateStat_cpu_threads"]
+    conda: "../envs/main_env.yaml",
+    shell:"""
+
+        find processed/*/{wildcards.split}/*.{wildcards.split}.R1.fq.gz | parallel 'echo -e {{}} "\t\c"; zcat {{}} | wc -l' | sort > {output.readstat}
+        find processed/{wildcards.split}_all/*.bam | parallel 'echo -e {{}}"\t\c";samtools flagstat {{}} | grep read1 | sed "s/ + 0 read1//g"'| sort > {output.fragstat}
+
+    """

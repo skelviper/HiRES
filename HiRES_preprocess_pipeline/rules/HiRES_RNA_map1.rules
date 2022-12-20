@@ -1,0 +1,136 @@
+rule extract_umi:
+    input:
+        RNA_R1="processed/{sample}/RNA/{sample}.rna.clean.R1.fq.gz",
+        RNA_R2="processed/{sample}/RNA/{sample}.rna.clean.R2.fq.gz"
+    output:
+        umi1="processed/{sample}/umi/umi.{sample}.rna.R1.fq.gz",
+        umi2="processed/{sample}/umi/umi.{sample}.rna.R2.fq.gz",
+        unzip_umi1="processed/RNA_all/umibycell.{sample}.rna.R1.fq"
+    resources:
+        nodes = 1
+    params:
+        pattern=r"NNNNNNNN",
+    conda:"../envs/main_env.yaml"
+    shell: """
+        umi_tools extract -p {params.pattern} -I {input.RNA_R2} -S {output.umi2} --read2-in={input.RNA_R1} --read2-out={output.umi1}
+
+        gunzip --force -c {output.umi1} > processed/{wildcards.sample}/umi/umi.{wildcards.sample}.rna.R1.fq
+
+        sed 's/_/_{wildcards.sample}_/' processed/{wildcards.sample}/umi/umi.{wildcards.sample}.rna.R1.fq > {output.unzip_umi1}
+
+        """
+#output UMIs matrix.
+
+rule RNAmerge:
+    input:
+        expand("processed/RNA_all/umibycell.{sample}.rna.R1.fq",sample=SAMPLES)
+    output:
+        rnaAll = temp("processed/RNA_all/rnaAll.fq"),
+    conda:"../envs/main_env.yaml",
+    shell:"""
+        cat {input} > {output.rnaAll}
+    """
+
+rule RNAclean:
+    input:
+        rnaAll = rules.RNAmerge.output.rnaAll,
+    output:
+        rnaAllclean="processed/RNA_all/rnaAll.clean.fq"
+    threads: config["resources"]["cutadapt_cpu_threads"]
+    resources:
+        nodes = config["resources"]["cutadapt_cpu_threads"]
+    params:
+        adapter=r"AAAAAAAAAAAAAANNNNNNNNCATTGCGCAATACTACCTCAACCCTGTCTCTTATA",
+    conda:"../envs/main_env.yaml",
+    shell:"""
+        # cut nextera transposes and clean empty line.
+        cutadapt -a {params.adapter} {input.rnaAll} -j {threads} --minimum-length 1 > {output.rnaAllclean}
+    """
+
+rule star_mapping:
+    input:
+        fastqIn = rules.RNAclean.output.rnaAllclean,
+        starIndex = config["refs"][config["ref_genome"]]["star_index"]
+    output:
+        bamOut = "processed/RNA_all/starOut/star.Aligned.sortedByCoord.out.bam"
+    threads: config["resources"]["star_cpu_threads"]
+    resources:
+        nodes = config["resources"]["star_cpu_threads"]
+    conda:"../envs/main_env.yaml"
+    shell:"""
+        STAR --runThreadN {threads} \
+        --genomeDir {input.starIndex} \
+        --readFilesIn {input.fastqIn} \
+        --outFileNamePrefix processed/RNA_all/starOut/star. \
+        --outSAMtype BAM Unsorted SortedByCoordinate --outReadsUnmapped Fastx --outSAMattributes NH HI NM MD
+        """
+
+rule makeFolder:
+    input:
+        bam = rules.star_mapping.output.bamOut,
+    output:
+        totalBamOut = "processed/RNA_all/bamToCount/star.Aligned.sortedByCoord.out.total.bam",
+    conda:"../envs/main_env.yaml",
+    shell:"""
+        mkdir -p processed/RNA_all/bamToCount
+        cp {input.bam} {output.totalBamOut}
+    """
+
+rule RNA_snp_split:
+    input:
+        RNAsnp = config["refs"][config["ref_genome"]]["RNAsnp"],
+        bam = rules.makeFolder.output.totalBamOut,
+        bamToProcess = rules.star_mapping.output.bamOut,
+    output:
+        dirOut = directory("processed/RNA_all/snpSplitRes"),
+        genome1BamOut = "processed/RNA_all/snpSplitRes/star.Aligned.sortedByCoord.out.genome1.bam",
+        genome2BamOut = "processed/RNA_all/snpSplitRes/star.Aligned.sortedByCoord.out.genome2.bam",
+        genome1Copied = "processed/RNA_all/bamToCount/star.Aligned.sortedByCoord.out.genome1.bam",
+        genome2Copied = "processed/RNA_all/bamToCount/star.Aligned.sortedByCoord.out.genome2.bam",
+    conda:"../envs/main_env.yaml"
+    shell:"""
+        
+        mkdir -p processed/RNA_all/snpSplitRes
+        SNPsplit --snp_file {input.RNAsnp} {input.bamToProcess} -o {output.dirOut}
+
+        cp {output.genome1BamOut} {output.genome1Copied}
+        cp {output.genome2BamOut} {output.genome2Copied}
+
+        """
+        
+rule count:
+    input:
+        bamIn = "processed/RNA_all/bamToCount/star.Aligned.sortedByCoord.out.{genome}.bam",
+        geneAnnotations = config["refs"][config["ref_genome"]]["annotations"],
+    output:
+        CountMatrix = "result/RNA_Res/counts.{type}.{genome}.tsv",
+    params:
+        countParams = r"--per-gene --per-cell --gene-tag=XT --wide-format-cell-counts --assigned-status-tag=XS",
+    threads: config["resources"]["count_cpu_threads"]
+    resources:
+        nodes = config["resources"]["count_cpu_threads"]
+    conda:"../envs/main_env.yaml"
+    shell:"""
+        
+        mkdir -p ./processed/RNA_all/feature_{wildcards.type}_{wildcards.genome}/
+        
+        featureCounts -a {input.geneAnnotations} -o ./processed/RNA_all/feature_{wildcards.type}_{wildcards.genome}/gene_assigned -R BAM {input.bamIn} -T {threads} -Q 30 -t {wildcards.type} -g gene_name -O -s 1 
+
+        #OUTPUT countMatix by gene
+        samtools sort ./processed/RNA_all/feature_{wildcards.type}_{wildcards.genome}/star.Aligned.sortedByCoord.out.{wildcards.genome}.bam.featureCounts.bam -o ./processed/RNA_all/feature_{wildcards.type}_{wildcards.genome}/samsort.bam
+        samtools index ./processed/RNA_all/feature_{wildcards.type}_{wildcards.genome}/samsort.bam
+        umi_tools count {params.countParams} -I ./processed/RNA_all/feature_{wildcards.type}_{wildcards.genome}/samsort.bam -S ./result/RNA_Res/counts.{wildcards.type}.{wildcards.genome}.tsv
+
+        """
+
+rule convertCountFormat:
+    input:
+        countMatrix = rules.count.output.CountMatrix,
+    output:
+        convertedCountMatrix = "result/RNA_Res/counts.{type}.{genome}.format.tsv",
+    conda:"../envs/main_env.yaml"
+    shell:"""
+        
+        Rscript CHARM/CHARM_scripts/fraction.R {input.countMatrix} {output.convertedCountMatrix}
+        
+    """

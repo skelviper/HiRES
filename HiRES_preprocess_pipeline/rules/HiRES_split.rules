@@ -1,0 +1,60 @@
+rule multiSplit:
+    input:
+        "Rawdata/{sample}/{sample}_R1.fq.gz",
+        "Rawdata/{sample}/{sample}_R2.fq.gz",
+    output: 
+        split_R1="processed/{sample}/{split}/{sample}.{split}.R1.fq.gz",
+        split_R2="processed/{sample}/{split}/{sample}.{split}.R2.fq.gz",
+    conda:"../envs/main_env.yaml"
+    threads: config["resources"]["cutadapt_cpu_threads"]
+    resources:
+        nodes = config["resources"]["cutadapt_cpu_threads"]
+    params:
+        adapter=lambda wildcards: config["split"][wildcards.split]
+    shell:"""
+        mkdir -p processed/{wildcards.sample}/{wildcards.split}
+        cutadapt -G '{params.adapter}' -j {threads} --untrimmed-output /dev/null --untrimmed-paired-output /dev/null -o {output.split_R1} -p {output.split_R2} {input} 
+        """
+
+rule split:
+    input:
+        "Rawdata/{sample}/{sample}_R1.fq.gz",
+        "Rawdata/{sample}/{sample}_R2.fq.gz"
+        #"Rawdata/{sample}_R1.fq.gz",
+        #"Rawdata/{sample}_R2.fq.gz",
+    output: 
+        DNA_R1="processed/{sample}/DNA/{sample}.dna.R1.fq.gz",
+        DNA_R2="processed/{sample}/DNA/{sample}.dna.R2.fq.gz",
+        RNA_R1="processed/{sample}/RNA/{sample}.rna.R1.fq.gz",
+        RNA_R2="processed/{sample}/RNA/{sample}.rna.R2.fq.gz",
+    conda:"../envs/main_env.yaml"
+        
+    threads: config["resources"]["cutadapt_cpu_threads"]
+    resources:
+        nodes = config["resources"]["cutadapt_cpu_threads"]
+    params:
+        adapter=r"XGGTTGAGGTAGTATTGCGCAATG;o=20"
+    shell:"""
+
+        cutadapt -G '{params.adapter}' -j {threads} --untrimmed-output {output.DNA_R1} --untrimmed-paired-output {output.DNA_R2} -o {output.RNA_R1} -p {output.RNA_R2} {input} 
+
+        """
+
+#cutRound2 is for minimize genome contamination in RNA data, probably from exonuclease activity of reverse transcriptase
+rule cutRound2:
+    input:
+        RNA_R1="processed/{sample}/RNA/{sample}.rna.R1.fq.gz",
+        RNA_R2="processed/{sample}/RNA/{sample}.rna.R2.fq.gz"
+    output: 
+        RNA_R1="processed/{sample}/RNA/{sample}.rna.clean.R1.fq.gz",
+        RNA_R2="processed/{sample}/RNA/{sample}.rna.clean.R2.fq.gz",
+    conda:"../envs/main_env.yaml",
+        
+    threads: config["resources"]["cutadapt_cpu_threads"]
+    resources:
+        nodes = config["resources"]["cutadapt_cpu_threads"]  
+    params:
+        adapter=r"XNNNNNNNNTTTTTTTTTTTTTTT;o=18"
+    shell:"""
+        cutadapt --action=none --discard-untrimmed -G '{params.adapter}' -j {threads} -o {output.RNA_R1} -p {output.RNA_R2} {input}
+        """

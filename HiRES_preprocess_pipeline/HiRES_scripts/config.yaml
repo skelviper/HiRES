@@ -1,0 +1,10 @@
+sample:
+    - TAGAcB
+genome:
+    hg19
+output:
+    processed
+input:
+    Rawdata
+shiftExtendSize:
+    75

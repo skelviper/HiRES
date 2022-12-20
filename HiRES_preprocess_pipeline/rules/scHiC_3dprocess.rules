@@ -1,0 +1,86 @@
+rule hickit_3d:
+    input:
+        impute_pairs = rules.hickit_2d.output.impute_pairs,
+        hickit = config["softwares"]["HICKIT"],
+    output:
+        tdg_1m = "processed/{sample}/3d_info/1m.{rep}.3dg",
+        tdg_200k = "processed/{sample}/3d_info/200k.{rep}.3dg",
+        tdg_50k = "processed/{sample}/3d_info/50k.{rep}.3dg",
+        tdg_20k = "processed/{sample}/3d_info/20k.{rep}.3dg",
+    resources:
+        nodes = 1
+    conda:"../envs/main_env.yaml"
+    shell: """
+
+        {input.hickit}/hickit -s{wildcards.rep} -M \
+            -i {input.impute_pairs} -Sr1m -c1 -r10m -c2 \
+            -b4m -b1m -O {output.tdg_1m} \
+            -b200k -O {output.tdg_200k} \
+            -D5 -b50k -O {output.tdg_50k} \
+            -D5 -b20k -O {output.tdg_20k}
+
+        """
+
+rule hickit_clean3D:
+    input:
+        tdg_20k = rules.hickit_3d.output.tdg_20k,
+        dip_pairs = rules.sep_for_clean.output.dip_pairs,
+        hires = config["softwares"]["HIRES"],
+    output:
+        clean = "processed/{sample}/3d_info/clean.{res}.{rep}.3dg"
+    resources:
+        nodes = 1
+    conda:"../envs/main_env.yaml"
+    shell: """
+
+        python {input.hires} clean3 -r {input.dip_pairs} -i processed/{wildcards.sample}/3d_info/{wildcards.res}.{wildcards.rep}.3dg -o {output.clean}
+        
+        """
+
+rule hickit_align3D:
+    input:
+        hires = config["softwares"]["HIRES"],
+        tdg_clean0 = "processed/{sample}/3d_info/clean.{res}.0.3dg",
+        tdg_clean1 = "processed/{sample}/3d_info/clean.{res}.1.3dg",
+        tdg_clean2 = "processed/{sample}/3d_info/clean.{res}.2.3dg",
+        tdg_clean3 = "processed/{sample}/3d_info/clean.{res}.3.3dg",
+        tdg_clean4 = "processed/{sample}/3d_info/clean.{res}.4.3dg",
+    output:
+        rmsInfo ="processed/{sample}/3d_info/{sample}.{res}.align.rms.info"
+    resources:
+        nodes = 1
+    conda:"../envs/main_env.yaml"
+    shell:"""
+        
+        python ./CHARM/CHARM_scripts/hires3dAligner.py processed/{wildcards.sample}/3d_info/clean.{wildcards.res}.[0-4].3dg 2> {output.rmsInfo} > /dev/null
+        
+        """
+
+rule generate_cpg_CIF:
+    input:
+        tdg = rules.hickit_clean3D.output.clean,
+        hires = config["softwares"]["HIRES"],
+        rmsInfo = rules.hickit_align3D.output.rmsInfo,
+        cpg = lambda wildcards: config["refs"][config["ref_genome"]]["cpg"][wildcards.res],
+    output:
+        cif="result/cif_cpg/{sample}.{res}.{rep}.cpg.cif",
+    conda:"../envs/main_env.yaml"
+    shell:"""
+
+        python {input.hires} mmcif -i {input.tdg} -o {output.cif} -b {input.cpg}  
+        
+        """
+
+rule generate_radial_pos:
+# WARNING, dipc version of color is not supported yet
+    input:
+        tdg_clean = rules.hickit_clean3D.output.clean,
+    output:
+        radial_pos = "result/radialPos/{res}/{sample}.rp.{res}.{rep}.color",
+    conda:"../envs/main_env.yaml",
+    shell:"""
+    
+        mkdir -p result/radialPos/{wildcards.res}
+        ~/biosoft/dip-c/dip-c color -C {input.tdg_clean} > {output.radial_pos}
+        
+    """

@@ -1,0 +1,144 @@
+rule bwa_map:
+    input:
+        ref_genome=config["refs"][config["ref_genome"]]["bwa_mem2_index"],
+        DNA1="processed/{sample}/DNA/{sample}.dna.R1.fq.gz",
+        DNA2 = "processed/{sample}/DNA/{sample}.dna.R2.fq.gz",
+    output:
+        bam = "processed/{sample}/mapping/{sample}.sort.bam",
+        bamidx = "processed/{sample}/mapping/{sample}.sort.bam.bai"
+    threads: config["resources"]["bwa_cpu_threads"],
+    resources:
+        nodes = config["resources"]["bwa_cpu_threads"],
+    params:
+        extra=r"-R '@RG\tID:{sample}\tPL:ILLUMINA\tSM:{sample}'",
+    conda:"../envs/main_env.yaml",
+    shell:"""
+
+        bwa-mem2 mem -5SP -t{threads} {params.extra} {input.ref_genome} {input.DNA1} {input.DNA2} | samtools sort -@{threads} -o {output.bam} -
+        samtools index -@{threads} {output.bam} {output.bamidx}
+
+        """
+
+rule align2pairs:
+    input:
+        hickit = config["softwares"]["HICKIT"],
+        snp_file = config["refs"][config["ref_genome"]]["snp"],
+        par_file = config["refs"][config["ref_genome"]]["par"],
+        bam = rules.bwa_map.output.bam,
+    output:
+        contacts_seg = "processed/{sample}/2d_info/contacts.seg.gz",
+    params:
+        yperx_threshold = config["yperx_threshold"],
+    log:
+        contacts_seg_log = "processed/{sample}/2d_info/contacts.seg.log",
+        raw_pairs_log = "processed/{sample}/2d_info/raw.pairs.log",
+        contacts_pairs_log = "processed/{sample}/2d_info/contacts.pairs.log",
+        yperx = "processed/{sample}/2d_info/{sample}.yperx.txt",
+    threads: config["resources"]["align2pairs_cpu_threads"],
+    resources:
+        mem_mb = 10000,
+        nodes = config["resources"]["align2pairs_cpu_threads"],
+    conda:"../envs/main_env.yaml"
+    shell: """
+        # decide sex
+        yperx=`awk 'BEGIN{{printf "%.6f",('$(samtools view -q 30 {input.bam} chrY |wc -l)'/'$(samtools view -q 30 {input.bam} chrX | wc -l)')}}'`
+        echo $yperx > {log.yperx} 
+
+        if [ $yperx \> {params.yperx_threshold} ]
+        then
+        samtools view -h {input.bam} | samtools sort -n -@10 | samtools view -h | {input.hickit}/hickit.js sam2seg  -v {input.snp_file} - 2> {log.contacts_seg_log} |\
+         {input.hickit}/hickit.js chronly - | {input.hickit}/hickit.js bedflt {input.par_file} - | sed 's/-/+/g' | gzip > {output.contacts_seg}
+        else
+        samtools view -h {input.bam} | samtools sort -n -@10 | samtools view -h | {input.hickit}/hickit.js sam2seg -v {input.snp_file} - 2> {log.contacts_seg_log} | {input.hickit}/hickit.js chronly -y - | sed 's/-/+/g' | gzip > {output.contacts_seg}
+        fi
+
+    """
+
+rule seg2pairs:
+    input:
+        hickit = config["softwares"]["HICKIT"],
+        contacts_seg = rules.align2pairs.output.contacts_seg,
+    output:
+        raw_pairs = "processed/{sample}/2d_info/raw.pairs.gz",
+        contacts_pairs = "processed/{sample}/2d_info/contacts.pairs.gz",
+    log:
+        raw_pairs_log = "processed/{sample}/2d_info/raw.pairs.log",
+        contacts_pairs_log = "processed/{sample}/2d_info/contacts.pairs.log",
+    conda:"../envs/main_env.yaml",
+    shell:"""
+
+        #generate raw.pairs.gz for statistics
+        {input.hickit}/hickit --dup-dist=0 -i {input.contacts_seg} -o - 2> {log.raw_pairs_log} | gzip > {output.raw_pairs}
+        #generate real pairs
+        {input.hickit}/hickit --dup-dist=500 -i {input.contacts_seg} -o - 2> {log.contacts_pairs_log} | gzip > {output.contacts_pairs}
+
+    """
+
+#clean premiscus legs and isolatied contacts
+rule cleanPairs:
+    input: 
+        hires = config["softwares"]["HIRES"],
+        hickit = config["softwares"]["HICKIT"],
+        contacts_pairs = rules.seg2pairs.output.contacts_pairs,
+    output: 
+        clean1_pairs= "result/cleaned_pairs/c1/{sample}.pairs.gz",
+        clean12_pairs = "result/cleaned_pairs/c12/{sample}.pairs.gz",
+        clean123_pairs = "result/cleaned_pairs/c123/{sample}.pairs.gz",
+    threads: config["resources"]["hires_clean_cpu_threads"]
+    resources:
+        nodes = config["resources"]["hires_clean_cpu_threads"],
+    params:
+        ref_annotation = config["refs"][config["ref_genome"]]["annotations"],
+    conda:"../envs/main_env.yaml"
+    shell:"""
+
+        python {input.hires} clean_leg -t {threads} {input.contacts_pairs} -o {output.clean1_pairs}
+        python {input.hires} clean_isolated -t {threads} -o {output.clean12_pairs} {output.clean1_pairs}
+        python {input.hires} clean_splicing {output.clean12_pairs} -r {params.ref_annotation} -o {output.clean123_pairs} -t {threads}
+
+    """
+
+
+rule hickit_2d:
+    input:
+        hickit = config["softwares"]["HICKIT"],
+        cleaned_pairs = rules.cleanPairs.output.clean123_pairs,
+    output:
+        impute_pairs = "result/impute/pairs/{sample}.impute.pairs.gz",
+        impute_val = "result/impute/val/{sample}.impute.val",
+    log:
+        impute_pairs_log = "processed/{sample}/2d_info/{sample}.impute.pairs.log",
+        impute_val_log = "processed/{sample}/2d_info/{sample}.impute.val.log",
+    resources:
+        nodes = 1
+    conda:"../envs/main_env.yaml",
+    shell:"""
+
+        #impute phases
+        {input.hickit}/hickit -i {input.cleaned_pairs} -u -o - 2> {log.impute_pairs_log} | bgzip > {output.impute_pairs}
+        # estimate imputation accuracy by holdout
+        {input.hickit}/hickit -i {input.cleaned_pairs} --out-val={output.impute_val} 2> {log.impute_val_log}
+
+        """
+
+rule sep_for_clean:
+    input:
+        #software
+        hires = config["softwares"]["HIRES"],
+        #file
+        impute_pairs = rules.hickit_2d.output.impute_pairs,
+    output:
+        dip_pairs = "result/dip_pairs/{sample}.dip.pairs.gz",
+        hickit_pairs = "processed/{sample}/2d_info/{sample}.hickit.pairs.gz",
+    threads: 4
+    resources:
+        nodes = 4
+    conda:"../envs/main_env.yaml",
+
+    shell:"""
+
+        python {input.hires} sep_clean -n {threads} -o1 {output.dip_pairs} -o2 {output.hickit_pairs} {input.impute_pairs}
+
+    """
+
+

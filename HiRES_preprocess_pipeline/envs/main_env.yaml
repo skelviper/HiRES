@@ -1,0 +1,29 @@
+channels:
+  - anaconda
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - cooler=0.8.11=pyh3252c3a_0
+  - pandas
+  - numpy
+  - bwa-mem2=2.1=he513fc3_0
+  - seqkit=0.13.2=0
+  - star=2.7.4a=0
+  - cutadapt=2.10=py37hf01694f_1
+  - samtools
+  - pip
+  - Cython
+  - umi_tools=1.0.1=py37hf01694f_2
+  - snpsplit=0.4.0=hdfd78af_1
+  - subread=2.0.1=hed695b0_0
+  - r-base=4.1
+  - r-tidyverse
+  - parallel
+  - picard=2.23.3=0
+  - seqkit=0.13.2
+  - bedtools=2.29.2
+  - r-bedtoolsr=2.30
+  - pip:
+    - cooltools==0.5.1
+    - rmsd==1.4
