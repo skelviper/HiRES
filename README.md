@@ -1,6 +1,6 @@
 # Code for HiRES analysis
 
-![hires](label.png)
+<img src="label.png" width="50%" height="50%">
 
 This folder project contains two folders, and I will describe their respective uses below.
 
