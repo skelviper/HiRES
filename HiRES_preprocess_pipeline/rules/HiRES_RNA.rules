@@ -130,6 +130,6 @@ rule convertCountFormat:
     conda:"../envs/main_env.yaml"
     shell:"""
         
-        Rscript CHARM/CHARM_scripts/fraction.R {input.countMatrix} {output.convertedCountMatrix}
+        Rscript HiRES_preprocess_pipeline/HiRES_scripts/fraction.R {input.countMatrix} {output.convertedCountMatrix}
         
     """

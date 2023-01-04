@@ -1,10 +1,10 @@
 #!/bin/bash
 
-#usage: ./runCHARM.sh
+#usage: ./runHiRES_preprocess.sh  h
 
 cd ../
 mkdir -p slurm_log
-snakemake --use-conda --cluster 'sbatch --exclude node03 --qos=medium --output=slurm_log/slurm-%j.out --cpus-per-task={threads} -t 7-00:00 -J CHARM!' --jobs 100 --resources nodes=100 --rerun-incomplete -s ./CHARM/CHARM.smk --keep-going
+snakemake --use-conda --cluster 'sbatch  --qos=medium --output=slurm_log/slurm-%j.out --cpus-per-task={threads} -t 7-00:00 -J HiRES!' --jobs 100 --resources nodes=100 --rerun-incomplete -s ./HiRES_preprocess_pipeline/HiRES.smk --keep-going
 
 mkdir -p ./analysis
-cp CHARM/stat.ipynb ./analysis/stat.ipynb
+cp HiRES_preprocess_pipeline/stat.ipynb ./analysis/stat.ipynb

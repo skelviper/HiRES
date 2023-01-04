@@ -1,3 +1,0 @@
-FileNotFoundError in line 13 of /shareb/zliu/project/202109/platetest/CHARM/CHARM.smk:
-[Errno 2] No such file or directory: './Rawdata'
-  File "/shareb/zliu/project/202109/platetest/CHARM/CHARM.smk", line 13, in <module>

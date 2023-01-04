@@ -1,12 +1,12 @@
 if_snp: True
-if_structure: False
+if_structure: True
 if_RNA_snp_split: False
 if_cuttag: True
 
-ref_genome: GRCh37d5  # GRCm38 or GRCh37d5
+ref_genome: GRCm38  # GRCm38 or GRCh37d5
 yperx_threshold: 0.5 # GM12878 is all female,set a bigger value
 softwares:
-  HIRES: /share/home/zliu/biosoft/hires_utils
+  HIRES: /share/home/zliu/shareb/zliu/analysis/hires_gastrulation/CHARMtools
   HICKIT: /share/home/zliu/biosoft/hickit-0.1.1_x64-linux/
   HICKIT_PAIRS_TO_CON: /share/home/zliu/biosoft/dip-c/scripts/hickit_pairs_to_con.sh
   HICKIT_IMPUTE_PAIRS_TO_CON: /share/home/zliu/biosoft/dip-c/scripts/hickit_impute_pairs_to_con.sh
@@ -28,8 +28,7 @@ refs:
 
   GRCh37d5:
     bwa_mem2_index: /share/Data/public/ref_genome/GRCh37d5/bwa_mem2_index/genome.fa
-    #star_index: /share/Data/public/ref_genome/GRCh37/star_index
-    star_index: /share/Data/public/ref_genome/human_ref/GRCh37d5/RNA_snp_split/NA12878_star_index #for NA12878
+    star_index: /share/Data/public/ref_genome/human_ref/GRCh37d5/RNA_snp_split/NA12878_star_index #for GM12878
     annotations: /share/Data/public/ref_genome/GRCh37/raw_data/gencode.v19.annotation.gtf
     snp: /share/home/zliu/share/Data/public/ref_genome/GRCh37/snp_file/GM12878/NA12878.withchr.txt
     par: /share/home/zliu/share/Data/public/ref_genome/GRCh37/raw_data/par.withchr.bed
@@ -39,9 +38,6 @@ refs:
       50k: /share/home/zliu/biosoft/hires_utils/hires_utils/reference/hg19CpG/GRCh37d5.CpG.50000.txt
       200k: /share/home/zliu/biosoft/hires_utils/hires_utils/reference/hg19CpG/GRCh37d5.CpG.200000.txt
       1m: /share/home/zliu/biosoft/hires_utils/hires_utils/reference/hg19CpG/GRCh37d5.CpG.1000000.txt
-split:
-  ct: XGGTTGAGGTAGTGGTATAGCTTCGTGTATAAGAGACAG;o=32
-  atac: XGGTTGAGGTAGTAAGTCCTGGATGTGTATAAGAGACAG;o=32
 
 resources:
   cutadapt_cpu_threads: 5

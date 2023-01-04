@@ -11,7 +11,6 @@ import os
 
 #input
 SAMPLES = [i.split(sep='_')[0] for i in os.listdir("./Rawdata")]
-SPLIT = ["ct"]
 #SAMPLES = os.listdir("./Rawdata")
 #SAMPLES = ["d0-1"]
 
@@ -40,11 +39,6 @@ rule all:
 #            res=["20k","50k","200k","1m"] if config["if_structure"] else [],
 #            rep=list(range(5)) if config["if_structure"] else []),
 
-        #cuttag part
-        expand("processed/{sample}/{split}/{sample}.{split}.R1.fq.gz", sample=SAMPLES if config["if_cuttag"] else [],split=SPLIT if config ["if_cuttag"] else []),
-        expand("processed/{split}_all/{sample}.{split}.pairend.sort.bam", sample=SAMPLES if config["if_cuttag"] else [],split=SPLIT if config ["if_cuttag"] else []),
-        expand("stat/{split}.read.stat",split=SPLIT if config ["if_cuttag"] else []),
-        expand("stat/{split}.frag.stat",split=SPLIT if config ["if_cuttag"] else []),
 #        expand("result/radialPos/{res}/{sample}.rp.{res}.{rep}.color", sample=SAMPLES if config["if_structure"] else [],
 #            res=["20k","50k","200k","1m"] if config["if_structure"] else [],
 #            rep=list(range(5)) if config["if_structure"] else []),
@@ -58,7 +52,6 @@ rule all:
 
 
 include: "rules/HiRES_split.rules"
-include: "rules/HiRES_cuttag.rules"
 include: "rules/scHiC_2dprocess.rules"
 include: "rules/scHiC_3dprocess.rules"
 include: "rules/HiRES_RNA.rules"
