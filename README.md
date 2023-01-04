@@ -1,9 +1,21 @@
-# Code for HiRES analysis
+# Code for HiRES data analysis
 
 <img src="label.png" width="50%" height="50%">
 
-This folder project contains two folders, and I will describe their respective uses below.
+## Introduction 
 
+**Hi**-C and **R**NA-seq **e**mployed **s**imultaneously (HiRES) allows us to efficiently detect both the transcriptome and the 3D genome organization in a single cell. 
+
+## Related Publications
+
+Linking genome structures to functions during lineage specification by simultaneous single-cell Hi-C and RNA-seq(We are working on it!)
+
+Zhiyuan Liu*; Yujie Chen*; Qimin Xia*; Menghan Liu; Heming Xu; Yi Chi; Yujing Deng;, Dong Xing✉
+
++ Raw data: PRJNA907173
++ Processed data: GSEXXXXXXX
+
+This folder project contains two folders, and I will describe their respective uses below.
 
 ## HiRES_preprocess_pipeline
 
@@ -28,19 +40,28 @@ tree -h -L 2
 #     └── [  40]  OrgfE951001 -> ../../hires_new_test/Rawdata/OrgfE951001
 ```
 2. Installation of environment
+
 ```bash
 mamba create -n hires -c conda-forge -c bioconda python=3.8 snakemake=5.20.1 
 ```
 3. Prepare files
-HiRES_preprocess_pipeline relies on Hickit in addition to CHARMtools and the scripts that can be installed automatically, and you need to build the reference genome you need.
+
+HiRES_preprocess_pipeline relies on hickit(https://github.com/lh3/hickit/) Dip-C(https://github.com/tanlongzhi/dip-c) and CHARMtools(https://github.com/skelviper/CHARMtools) in addition to softwares that can be installed automatically. Also you need to build index for RNA/DNA seperately on your version of reference genome.
+
 ```bash
 cd HiRES_preprocess_pipeline
 vim config.yaml
 ```
 
+4. Run the pipeline
+```bash
+cd HiRES_preprocess_pipeline; ./runHiRES_preprocess.sh
+```
 
-## CHARMtools
-The installation environment, CHARMtools, is a python package with some R code stored in the Rlib folder.
+5. generate statistics
+
+    see analysis/stat.ipynb
 
 ## analysis_and_plot_notebooks
-analysis_and_plot_notebooks 中存放了项目分析中所用的python/R notebooks。
+
+analysis_and_plot_notebooks holds the python/R notebooks used in the analysis of the project.
