@@ -10,7 +10,7 @@
 
 Linking genome structures to functions during lineage specification by simultaneous single-cell Hi-C and RNA-seq(We are working on it!)
 
-Zhiyuan Liu*; Yujie Chen*; Qimin Xia*; Menghan Liu; Heming Xu; Yi Chi; Yujing Deng;, Dong Xing✉
+Zhiyuan Liu*; Yujie Chen*; Qimin Xia*; Menghan Liu; Heming Xu; Yi Chi; Yujing Deng; Dong Xing✉
 
 + Raw data: PRJNA907173
 + Processed data: GSEXXXXXXX
