@@ -1,5 +1,7 @@
 # Code for HiRES data analysis
 
+[![DOI](https://zenodo.org/badge/580488541.svg)](https://zenodo.org/badge/latestdoi/580488541)
+
 <img src="label.png" width="50%" height="50%">
 
 ## Introduction 
