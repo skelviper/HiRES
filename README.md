@@ -13,7 +13,7 @@ Linking genome structures to functions during lineage specification by simultane
 Zhiyuan Liu*; Yujie Chen*; Qimin Xia*; Menghan Liu; Heming Xu; Yi Chi; Yujing Deng; Dong Xing✉
 
 + Raw data: PRJNA907173
-+ Processed data: GSEXXXXXXX
++ Processed data: GSE223917
 
 This folder project contains two folders, and I will describe their respective uses below.
 
