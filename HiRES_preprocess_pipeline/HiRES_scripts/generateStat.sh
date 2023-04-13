@@ -8,7 +8,8 @@ find ./ -name "raw.pairs.gz" | parallel --tag 'zcat {} |grep -v "^#"| wc -l' | s
 find -L ./Rawdata/ -name "*R1*.gz" | parallel --tag 'zcat {} | wc -l' | sort > ./stat/raw.fq.stat
 find ./processed -name "*.rna.clean.R1.fq.gz" | parallel --tag 'zcat {} | wc -l' | sort > ./stat/rna.fq.stat
 find ./processed -name "*.dna.R1.fq.gz" | parallel --tag 'zcat {} | wc -l' | sort > ./stat/dna.fq.stat
-find ./processed -name "contacts.pairs.gz" | parallel --tag 'zcat {} | grep -v "^#" |wc -l' | sort > ./stat/pairs.dedup.stat
+#find ./processed -name "contacts.pairs.gz" | parallel --tag 'zcat {} | grep -v "^#" |wc -l' | sort > ./stat/pairs.dedup.stat
+find ./result/contacts_pairs/ -name "*.pairs.gz" | parallel --tag 'zcat {} |grep -v "^#" | wc -l' | sort > ./stat/pairs.dedup.stat
 find ./result/cleaned_pairs/c1 -name "*.pairs.gz" | parallel --tag 'zcat {} |grep -v "^#" | wc -l' | sort > ./stat/pairs.c1.stat
 find ./result/cleaned_pairs/c12 -name "*.pairs.gz" | parallel --tag 'zcat {} | grep -v "^#" |wc -l' | sort > ./stat/pairs.c12.stat
 find ./result/cleaned_pairs/c123 -name "*.pairs.gz" | parallel --tag 'zcat {} | grep -v "^#" |wc -l' | sort > ./stat/pairs.c123.stat

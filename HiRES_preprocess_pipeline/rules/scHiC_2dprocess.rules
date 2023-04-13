@@ -22,13 +22,13 @@ rule bwa_map:
 rule align2pairs:
     input:
         hickit = config["softwares"]["HICKIT"],
-        snp_file = config["refs"][config["ref_genome"]]["snp"],
-        par_file = config["refs"][config["ref_genome"]]["par"],
         bam = rules.bwa_map.output.bam,
     output:
         contacts_seg = "processed/{sample}/2d_info/contacts.seg.gz",
     params:
         yperx_threshold = config["yperx_threshold"],
+        snp_file = config["refs"][config["ref_genome"]]["snp"],
+        par_file = config["refs"][config["ref_genome"]]["par"],
     log:
         contacts_seg_log = "processed/{sample}/2d_info/contacts.seg.log",
         raw_pairs_log = "processed/{sample}/2d_info/raw.pairs.log",
@@ -41,15 +41,18 @@ rule align2pairs:
     conda:"../envs/main_env.yaml"
     shell: """
         # decide sex
-        yperx=`awk 'BEGIN{{printf "%.6f",('$(samtools view -q 30 {input.bam} chrY |wc -l)'/'$(samtools view -q 30 {input.bam} chrX | wc -l)')}}'`
+        yperx=`awk 'BEGIN{{printf "%.6f",('$(samtools view -q 30 {input.bam} chrY |wc -l)'/'$(samtools view -q 30 {input.bam} chrX | wc -l)')}}'` || yperx=-1
         echo $yperx > {log.yperx} 
 
         if [ $yperx \> {params.yperx_threshold} ]
         then
-        samtools view -h {input.bam} | samtools sort -n -@10 | samtools view -h | {input.hickit}/hickit.js sam2seg  -v {input.snp_file} - 2> {log.contacts_seg_log} |\
-         {input.hickit}/hickit.js chronly - | {input.hickit}/hickit.js bedflt {input.par_file} - | sed 's/-/+/g' | gzip > {output.contacts_seg}
+        samtools view -h {input.bam} | samtools sort -n -@10 | samtools view -h | {input.hickit}/hickit.js sam2seg  -v {params.snp_file} - 2> {log.contacts_seg_log} |\
+         {input.hickit}/hickit.js chronly - | {input.hickit}/hickit.js bedflt {params.par_file} - | sed 's/-/+/g' | gzip > {output.contacts_seg}
+        elif [ $yperx == -1 ]
+        then
+        samtools view -h {input.bam} | samtools sort -n -@10 | samtools view -h | {input.hickit}/hickit.js sam2seg - 2> {log.contacts_seg_log} | sed 's/-/+/g' | gzip > {output.contacts_seg}
         else
-        samtools view -h {input.bam} | samtools sort -n -@10 | samtools view -h | {input.hickit}/hickit.js sam2seg -v {input.snp_file} - 2> {log.contacts_seg_log} | {input.hickit}/hickit.js chronly -y - | sed 's/-/+/g' | gzip > {output.contacts_seg}
+        samtools view -h {input.bam} | samtools sort -n -@10 | samtools view -h | {input.hickit}/hickit.js sam2seg -v {params.snp_file} - 2> {log.contacts_seg_log} | {input.hickit}/hickit.js chronly -y - | sed 's/-/+/g' | gzip > {output.contacts_seg}
         fi
 
     """
@@ -60,7 +63,8 @@ rule seg2pairs:
         contacts_seg = rules.align2pairs.output.contacts_seg,
     output:
         raw_pairs = "processed/{sample}/2d_info/raw.pairs.gz",
-        contacts_pairs = "processed/{sample}/2d_info/contacts.pairs.gz",
+        #contacts_pairs = "processed/{sample}/2d_info/contacts.pairs.gz",
+        contacts_pairs = "result/contacts_pairs/{sample}.pairs.gz",
     log:
         raw_pairs_log = "processed/{sample}/2d_info/raw.pairs.log",
         contacts_pairs_log = "processed/{sample}/2d_info/contacts.pairs.log",
@@ -102,7 +106,7 @@ rule cleanPairs:
 rule hickit_2d:
     input:
         hickit = config["softwares"]["HICKIT"],
-        cleaned_pairs = rules.cleanPairs.output.clean123_pairs,
+        cleaned_pairs = rules.cleanPairs.output.clean123_pairs if config["if_clean"] else rules.seg2pairs.output.contacts_pairs,
     output:
         impute_pairs = "result/impute/pairs/{sample}.impute.pairs.gz",
         impute_val = "result/impute/val/{sample}.impute.val",

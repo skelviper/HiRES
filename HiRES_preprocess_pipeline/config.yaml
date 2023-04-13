@@ -1,9 +1,9 @@
-if_snp: True
-if_structure: True
 if_RNA_snp_split: False
-if_cuttag: True
+if_phase: False
+if_clean: False
+if_structure: False
 
-ref_genome: GRCm38  # GRCm38 or GRCh37d5
+ref_genome: TAIR10  # GRCm38 GRCh37d5 and TAIR10
 yperx_threshold: 0.5 # GM12878 is all female,set a bigger value
 softwares:
   HIRES: /share/home/zliu/shareb/zliu/analysis/hires_gastrulation/CHARMtools
@@ -38,6 +38,14 @@ refs:
       50k: /share/home/zliu/biosoft/hires_utils/hires_utils/reference/hg19CpG/GRCh37d5.CpG.50000.txt
       200k: /share/home/zliu/biosoft/hires_utils/hires_utils/reference/hg19CpG/GRCh37d5.CpG.200000.txt
       1m: /share/home/zliu/biosoft/hires_utils/hires_utils/reference/hg19CpG/GRCh37d5.CpG.1000000.txt
+  
+  TAIR10:
+    bwa_mem2_index: /share/Data/public/ref_genome/ara_ref_embl/bwamem2_index/genome.fa
+    star_index: /share/Data/public/ref_genome/ara_ref_embl/star_index
+    annotations: /share/Data/public/ref_genome/ara_ref_embl/Rawdata/Arabidopsis_thaliana.TAIR10.52.gtf
+    snp: NA
+    RNAsnp: NA
+    par: NA
 
 resources:
   cutadapt_cpu_threads: 5

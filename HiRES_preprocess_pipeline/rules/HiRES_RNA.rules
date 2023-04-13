@@ -105,6 +105,7 @@ rule count:
         CountMatrix = "result/RNA_Res/counts.{type}.{genome}.tsv",
     params:
         countParams = r"--per-gene --per-cell --gene-tag=XT --wide-format-cell-counts --assigned-status-tag=XS",
+        typeCount = "gene_id" if config["ref_genome"] == "TAIR10" else "gene_name",
     threads: config["resources"]["count_cpu_threads"]
     resources:
         nodes = config["resources"]["count_cpu_threads"]
@@ -113,7 +114,7 @@ rule count:
         
         mkdir -p ./processed/RNA_all/feature_{wildcards.type}_{wildcards.genome}/
         
-        featureCounts -a {input.geneAnnotations} -o ./processed/RNA_all/feature_{wildcards.type}_{wildcards.genome}/gene_assigned -R BAM {input.bamIn} -T {threads} -Q 30 -t {wildcards.type} -g gene_name -M -O --fraction
+        featureCounts -a {input.geneAnnotations} -o ./processed/RNA_all/feature_{wildcards.type}_{wildcards.genome}/gene_assigned -R BAM {input.bamIn} -T {threads} -Q 30 -t {wildcards.type} -g {params.typeCount} -M -O --fraction
 
         #OUTPUT countMatix by gene
         samtools sort ./processed/RNA_all/feature_{wildcards.type}_{wildcards.genome}/star.Aligned.sortedByCoord.out.{wildcards.genome}.bam.featureCounts.bam -o ./processed/RNA_all/feature_{wildcards.type}_{wildcards.genome}/samsort.bam
