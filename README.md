@@ -10,7 +10,7 @@
 
 ## Related Publications
 
-Linking genome structures to functions during lineage specification by simultaneous single-cell Hi-C and RNA-seq(in press)
+Linking genome structures to functions by simultaneous single-cell Hi-C and RNA-seq, Science 380, 1070–1076 (2023)
 
 Zhiyuan Liu*; Yujie Chen*; Qimin Xia*; Menghan Liu; Heming Xu; Yi Chi; Yujing Deng; Dong Xing✉
 
