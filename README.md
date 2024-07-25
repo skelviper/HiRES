@@ -33,7 +33,6 @@ tree -h -L 2
 # │   ├── [  35]  envs
 # │   ├── [ 248]  HiRES_scripts
 # │   ├── [3.1K]  HiRES.smk
-# │   ├── [1.0K]  LICENSE
 # │   ├── [ 152]  README.md
 # │   ├── [ 224]  rules
 # │   ├── [ 361]  runHiRES_preprocess.sh
@@ -48,7 +47,7 @@ mamba create -n hires -c conda-forge -c bioconda python=3.8 snakemake=5.20.1
 ```
 3. Prepare files
 
-HiRES_preprocess_pipeline relies on hickit(https://github.com/lh3/hickit/) Dip-C(https://github.com/tanlongzhi/dip-c) and CHARMtools(https://github.com/skelviper/CHARMtools) in addition to softwares that can be installed automatically. Also you need to build index for RNA/DNA seperately on your version of reference genome.
+HiRES_preprocess_pipeline relies on hickit(https://github.com/lh3/hickit/) and CHARMtools(https://github.com/skelviper/CHARMtools) in addition to softwares that can be installed automatically. Also you need to build index for RNA/DNA seperately on your version of reference genome.
 
 ```bash
 cd HiRES_preprocess_pipeline
