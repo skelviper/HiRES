@@ -9,7 +9,6 @@ rule split:
         DNA_R2="processed/{sample}/DNA/{sample}.dna.R2.fq.gz",
         RNA_R1="processed/{sample}/RNA/{sample}.rna.R1.fq.gz",
         RNA_R2="processed/{sample}/RNA/{sample}.rna.R2.fq.gz",
-    conda:"../envs/main_env.yaml"
         
     threads: config["resources"]["cutadapt_cpu_threads"]
     resources:
@@ -30,7 +29,6 @@ rule cutRound2:
     output: 
         RNA_R1="processed/{sample}/RNA/{sample}.rna.clean.R1.fq.gz",
         RNA_R2="processed/{sample}/RNA/{sample}.rna.clean.R2.fq.gz",
-    conda:"../envs/main_env.yaml",
         
     threads: config["resources"]["cutadapt_cpu_threads"]
     resources:

@@ -1,8 +1,8 @@
 ####################################
-#       HiRES pipeline              #
+#       HiRES pipeline             #
 #@author Z Liu                     #
-#@Ver 0.2.0                        #
-#@date 2021/8/12                   #
+#@Ver 1.0                          #
+#@date 2024/7/25                   #
 ####################################
 
 #############CONFIG#################
@@ -35,13 +35,6 @@ rule all:
         expand("processed/{sample}/3d_info/{res}.{rep}.3dg", sample=SAMPLES if config["if_structure"] else [],
             res=["20k","50k","200k","1m"] if config["if_structure"] else [],
             rep=list(range(5)) if config["if_structure"] else []),
-#        expand("result/cif_cpg/{sample}.{res}.{rep}.cpg.cif", sample=SAMPLES if config["if_structure"] else [],
-#            res=["20k","50k","200k","1m"] if config["if_structure"] else [],
-#            rep=list(range(5)) if config["if_structure"] else []),
-
-#        expand("result/radialPos/{res}/{sample}.rp.{res}.{rep}.color", sample=SAMPLES if config["if_structure"] else [],
-#            res=["20k","50k","200k","1m"] if config["if_structure"] else [],
-#            rep=list(range(5)) if config["if_structure"] else []),
     threads: config["resources"]["generateStat_cpu_threads"] 
     shell:"""
         ./HiRES_preprocess_pipeline/HiRES_scripts/generateStat.sh

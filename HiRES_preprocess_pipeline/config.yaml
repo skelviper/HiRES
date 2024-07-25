@@ -1,17 +1,11 @@
-if_snp: True
 if_structure: True
 if_RNA_snp_split: False
-if_cuttag: True
 
 ref_genome: GRCm38  # GRCm38 or GRCh37d5
-yperx_threshold: 0.5 # GM12878 is all female,set a bigger value
+yperx_threshold: 0.015 # GM12878 is all female,set a bigger value
 softwares:
-  HIRES: /share/home/zliu/shareb/zliu/analysis/hires_gastrulation/CHARMtools
+  HIRES: /shareb/zliu/analysis/CHARMtools
   HICKIT: /share/home/zliu/biosoft/hickit-0.1.1_x64-linux/
-  HICKIT_PAIRS_TO_CON: /share/home/zliu/biosoft/dip-c/scripts/hickit_pairs_to_con.sh
-  HICKIT_IMPUTE_PAIRS_TO_CON: /share/home/zliu/biosoft/dip-c/scripts/hickit_impute_pairs_to_con.sh
-  DIP_C: /share/home/zliu/biosoft/dip-c/dip-c
-  HICKIT_3DG_TO_3DG_RESCALE_UNIT: /share/home/zliu/biosoft/dip-c/scripts/hickit_3dg_to_3dg_rescale_unit.sh
 refs:
   GRCm38:
     bwa_mem2_index: /share/Data/public/ref_genome/mouse_ref/M23/bwamem2/genome.fa
@@ -20,11 +14,6 @@ refs:
     snp: /share/home/zliu/share/Data/public/ref_genome/GRCm38/snp/Tan.CAST_B6.snp.GRCm38.withchr.txt
     par: /share/home/zliu/share/Data/public/ref_genome/GRCm38/raw_data/par.bed
     RNAsnp: /share/home/zliu/share/Data/public/ref_genome/mouse_ref/M23/RNA_snp_split/all_SNPs_CAST_EiJ_GRCm38.txt.gz
-    cpg:
-      20k: /share/home/zliu/share/Data/public/ref_genome/mouse_ref/M23/CpG/dipc_cpg/mm10.CpG.20000.txt
-      50k: /share/home/zliu/share/Data/public/ref_genome/mouse_ref/M23/CpG/dipc_cpg/mm10.CpG.50000.txt
-      200k: /share/home/zliu/share/Data/public/ref_genome/mouse_ref/M23/CpG/dipc_cpg/mm10.CpG.200000.txt
-      1m: /share/home/zliu/share/Data/public/ref_genome/mouse_ref/M23/CpG/dipc_cpg/mm10.CpG.1000000.txt
 
   GRCh37d5:
     bwa_mem2_index: /share/Data/public/ref_genome/GRCh37d5/bwa_mem2_index/genome.fa
@@ -33,11 +22,6 @@ refs:
     snp: /share/home/zliu/share/Data/public/ref_genome/GRCh37/snp_file/GM12878/NA12878.withchr.txt
     par: /share/home/zliu/share/Data/public/ref_genome/GRCh37/raw_data/par.withchr.bed
     RNAsnp: /share/Data/public/ref_genome/human_ref/GRCh37d5/RNA_snp_split/NA12878.withchr.SNPsplit.txt.gz
-    cpg:
-      20k: /share/home/zliu/biosoft/hires_utils/hires_utils/reference/hg19CpG/GRCh37d5.CpG.20000.txt
-      50k: /share/home/zliu/biosoft/hires_utils/hires_utils/reference/hg19CpG/GRCh37d5.CpG.50000.txt
-      200k: /share/home/zliu/biosoft/hires_utils/hires_utils/reference/hg19CpG/GRCh37d5.CpG.200000.txt
-      1m: /share/home/zliu/biosoft/hires_utils/hires_utils/reference/hg19CpG/GRCh37d5.CpG.1000000.txt
 
 resources:
   cutadapt_cpu_threads: 5

@@ -9,7 +9,6 @@ rule hickit_3d:
         tdg_20k = "processed/{sample}/3d_info/20k.{rep}.3dg",
     resources:
         nodes = 1
-    conda:"../envs/main_env.yaml"
     shell: """
 
         {input.hickit}/hickit -s{wildcards.rep} -M \
@@ -30,7 +29,6 @@ rule hickit_clean3D:
         clean = "processed/{sample}/3d_info/clean.{res}.{rep}.3dg"
     resources:
         nodes = 1
-    conda:"../envs/main_env.yaml"
     shell: """
 
         python {input.hires} clean3 -r {input.dip_pairs} -i processed/{wildcards.sample}/3d_info/{wildcards.res}.{wildcards.rep}.3dg -o {output.clean}
@@ -49,38 +47,8 @@ rule hickit_align3D:
         rmsInfo ="processed/{sample}/3d_info/{sample}.{res}.align.rms.info"
     resources:
         nodes = 1
-    conda:"../envs/main_env.yaml"
     shell:"""
         
         python HiRES_preprocess_pipeline/HiRES_scripts/hires3dAligner.py processed/{wildcards.sample}/3d_info/clean.{wildcards.res}.[0-4].3dg 2> {output.rmsInfo} > /dev/null
         
         """
-
-# rule generate_cpg_CIF:
-#     input:
-#         tdg = rules.hickit_clean3D.output.clean,
-#         hires = config["softwares"]["HIRES"],
-#         rmsInfo = rules.hickit_align3D.output.rmsInfo,
-#         cpg = lambda wildcards: config["refs"][config["ref_genome"]]["cpg"][wildcards.res],
-#     output:
-#         cif="result/cif_cpg/{sample}.{res}.{rep}.cpg.cif",
-#     conda:"../envs/main_env.yaml"
-#     shell:"""
-
-#         python {input.hires} mmcif -i {input.tdg} -o {output.cif} -b {input.cpg}  
-        
-#         """
-
-# rule generate_radial_pos:
-# # WARNING, dipc version of color is not supported yet
-#     input:
-#         tdg_clean = rules.hickit_clean3D.output.clean,
-#     output:
-#         radial_pos = "result/radialPos/{res}/{sample}.rp.{res}.{rep}.color",
-#     conda:"../envs/main_env.yaml",
-#     shell:"""
-    
-#         mkdir -p result/radialPos/{wildcards.res}
-#         ~/biosoft/dip-c/dip-c color -C {input.tdg_clean} > {output.radial_pos}
-        
-#     """

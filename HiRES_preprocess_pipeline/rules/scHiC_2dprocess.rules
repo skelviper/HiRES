@@ -11,7 +11,6 @@ rule bwa_map:
         nodes = config["resources"]["bwa_cpu_threads"],
     params:
         extra=r"-R '@RG\tID:{sample}\tPL:ILLUMINA\tSM:{sample}'",
-    conda:"../envs/main_env.yaml",
     shell:"""
 
         bwa-mem2 mem -5SP -t{threads} {params.extra} {input.ref_genome} {input.DNA1} {input.DNA2} | samtools sort -@{threads} -o {output.bam} -
@@ -38,7 +37,6 @@ rule align2pairs:
     resources:
         mem_mb = 10000,
         nodes = config["resources"]["align2pairs_cpu_threads"],
-    conda:"../envs/main_env.yaml"
     shell: """
         # decide sex
         yperx=`awk 'BEGIN{{printf "%.6f",('$(samtools view -q 30 {input.bam} chrY |wc -l)'/'$(samtools view -q 30 {input.bam} chrX | wc -l)')}}'`
@@ -64,7 +62,6 @@ rule seg2pairs:
     log:
         raw_pairs_log = "processed/{sample}/2d_info/raw.pairs.log",
         contacts_pairs_log = "processed/{sample}/2d_info/contacts.pairs.log",
-    conda:"../envs/main_env.yaml",
     shell:"""
 
         #generate raw.pairs.gz for statistics
@@ -89,7 +86,6 @@ rule cleanPairs:
         nodes = config["resources"]["hires_clean_cpu_threads"],
     params:
         ref_annotation = config["refs"][config["ref_genome"]]["annotations"],
-    conda:"../envs/main_env.yaml"
     shell:"""
 
         python {input.hires} clean_leg -t {threads} {input.contacts_pairs} -o {output.clean1_pairs}
@@ -111,7 +107,6 @@ rule hickit_2d:
         impute_val_log = "processed/{sample}/2d_info/{sample}.impute.val.log",
     resources:
         nodes = 1
-    conda:"../envs/main_env.yaml",
     shell:"""
 
         #impute phases
@@ -133,7 +128,6 @@ rule sep_for_clean:
     threads: 4
     resources:
         nodes = 4
-    conda:"../envs/main_env.yaml",
 
     shell:"""
 

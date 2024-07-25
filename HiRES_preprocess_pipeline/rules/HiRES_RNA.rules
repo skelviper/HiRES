@@ -10,7 +10,6 @@ rule extract_umi:
         nodes = 1
     params:
         pattern=r"NNNNNNNN",
-    conda:"../envs/main_env.yaml"
     shell: """
         umi_tools extract -p {params.pattern} -I {input.RNA_R2} -S {output.umi2} --read2-in={input.RNA_R1} --read2-out={output.umi1}
 
@@ -39,7 +38,6 @@ rule RNAclean:
     threads: config["resources"]["cutadapt_cpu_threads"]
     resources:
         nodes = config["resources"]["cutadapt_cpu_threads"]
-    conda:"../envs/main_env.yaml",
     shell:"""
         # cut nextera transposes and clean empty line.
         cutadapt -a CTGTCTCTTATA {input.rnaAll} -j {threads} | sed 'N;N;N;/\\n\\n/d' > {output.rnaAllclean}
@@ -55,7 +53,6 @@ rule star_mapping:
     threads: config["resources"]["star_cpu_threads"]
     resources:
         nodes = config["resources"]["star_cpu_threads"]
-    conda:"../envs/main_env.yaml"
     shell:"""
         STAR --runThreadN {threads} \
         --genomeDir {input.starIndex} \
@@ -69,7 +66,6 @@ rule makeFolder:
         bam = rules.star_mapping.output.bamOut,
     output:
         totalBamOut = "processed/RNA_all/bamToCount/star.Aligned.sortedByCoord.out.total.bam",
-    conda:"../envs/main_env.yaml",
     shell:"""
         mkdir -p processed/RNA_all/bamToCount
         cp {input.bam} {output.totalBamOut}
@@ -86,7 +82,6 @@ rule RNA_snp_split:
         genome2BamOut = "processed/RNA_all/snpSplitRes/star.Aligned.sortedByCoord.out.genome2.bam",
         genome1Copied = "processed/RNA_all/bamToCount/star.Aligned.sortedByCoord.out.genome1.bam",
         genome2Copied = "processed/RNA_all/bamToCount/star.Aligned.sortedByCoord.out.genome2.bam",
-    conda:"../envs/main_env.yaml"
     shell:"""
         
         mkdir -p processed/RNA_all/snpSplitRes
@@ -108,12 +103,11 @@ rule count:
     threads: config["resources"]["count_cpu_threads"]
     resources:
         nodes = config["resources"]["count_cpu_threads"]
-    conda:"../envs/main_env.yaml"
     shell:"""
         
         mkdir -p ./processed/RNA_all/feature_{wildcards.type}_{wildcards.genome}/
         
-        featureCounts -a {input.geneAnnotations} -o ./processed/RNA_all/feature_{wildcards.type}_{wildcards.genome}/gene_assigned -R BAM {input.bamIn} -T {threads} -Q 30 -t {wildcards.type} -g gene_name -M -O --fraction
+        featureCounts -a {input.geneAnnotations} -o ./processed/RNA_all/feature_{wildcards.type}_{wildcards.genome}/gene_assigned -R BAM {input.bamIn} -T {threads} -Q 30 -t {wildcards.type} -g gene_name -M -O --fraction -s 1
 
         #OUTPUT countMatix by gene
         samtools sort ./processed/RNA_all/feature_{wildcards.type}_{wildcards.genome}/star.Aligned.sortedByCoord.out.{wildcards.genome}.bam.featureCounts.bam -o ./processed/RNA_all/feature_{wildcards.type}_{wildcards.genome}/samsort.bam
@@ -127,7 +121,6 @@ rule convertCountFormat:
         countMatrix = rules.count.output.CountMatrix,
     output:
         convertedCountMatrix = "result/RNA_Res/counts.{type}.{genome}.format.tsv",
-    conda:"../envs/main_env.yaml"
     shell:"""
         
         Rscript HiRES_preprocess_pipeline/HiRES_scripts/fraction.R {input.countMatrix} {output.convertedCountMatrix}
