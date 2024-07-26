@@ -44,6 +44,8 @@ tree -h -L 2
 
 ```bash
 mamba create -n hires -c conda-forge -c bioconda python=3.8 snakemake=5.20.1 
+mamba activate hires
+mamba env update --file HiRES_preprocess_pipeline/envs/main_env.yaml
 ```
 3. Prepare files
 
